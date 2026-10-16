@@ -1,0 +1,17 @@
+[
+  {
+    "id": "math-mult",
+    "name": "Simple multiplication",
+    "prompt": "What is 17 multiplied by 23? Reply with only the number, nothing else.",
+    "scorer": { "type": "regex", "pattern": "^\\s*391\\s*$" }
+  },
+  {
+    "id": "explain-retry",
+    "name": "Explain retry with backoff",
+    "prompt": "In 2-3 sentences, explain why a client should use exponential backoff when retrying a failed API call.",
+    "scorer": {
+      "type": "judge",
+      "rubric": "PASS only if the answer (1) says retrying too quickly can overload a struggling server, and (2) says waits grow longer after each failure. Otherwise FAIL."
+    }
+  }
+]

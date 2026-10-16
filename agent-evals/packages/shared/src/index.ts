@@ -28,3 +28,13 @@ export interface RunResult {
 }
 
 export type Verdict = 'better' | 'worse' | 'inconclusive';
+
+export type ScorerType = 'regex' | 'judge';
+
+export interface TaskDef {
+  id: string;
+  name: string;
+  prompt: string;
+  scorerType: ScorerType;
+  scorerSpec: Record<string, unknown>;
+}

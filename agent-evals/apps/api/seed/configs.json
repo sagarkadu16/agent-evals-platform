@@ -1,0 +1,22 @@
+[
+  {
+    "id": "config-a-cheap",
+    "name": "A: DeepSeek V4 Flash",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "openrouter",
+    "toolsets": ["file"],
+    "skills": [],
+    "maxTurns": 10,
+    "runBudgetSec": 120
+  },
+  {
+    "id": "config-b-sonnet",
+    "name": "B: Claude Sonnet 5.5",
+    "model": "anthropic/claude-sonnet-5.5",
+    "provider": "openrouter",
+    "toolsets": ["file"],
+    "skills": [],
+    "maxTurns": 10,
+    "runBudgetSec": 120
+  }
+]
