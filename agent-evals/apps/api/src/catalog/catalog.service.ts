@@ -8,6 +8,7 @@ interface TaskRow {
   prompt: string;
   scorer_type: ScorerType;
   scorer_spec: string;
+  reference_answer: string | null;
 }
 
 interface ConfigRow {
@@ -19,6 +20,7 @@ interface ConfigRow {
   skills: string;
   max_turns: number;
   run_budget_sec: number;
+  mock_pass_rate: number | null;
 }
 
 @Injectable()
@@ -36,6 +38,7 @@ export class CatalogService {
       prompt: r.prompt,
       scorerType: r.scorer_type,
       scorerSpec: JSON.parse(r.scorer_spec) as Record<string, unknown>,
+      referenceAnswer: r.reference_answer ?? undefined,
     }));
   }
 
@@ -53,6 +56,7 @@ export class CatalogService {
       skills: JSON.parse(r.skills) as string[],
       maxTurns: r.max_turns,
       runBudgetSec: r.run_budget_sec,
+      mockPassRate: r.mock_pass_rate ?? undefined,
     }));
   }
 }

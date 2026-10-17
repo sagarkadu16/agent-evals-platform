@@ -3,12 +3,14 @@
     "id": "math-mult",
     "name": "Simple multiplication",
     "prompt": "What is 17 multiplied by 23? Reply with only the number, nothing else.",
+    "referenceAnswer": "391",
     "scorer": { "type": "regex", "pattern": "^\\s*391\\s*$" }
   },
   {
     "id": "explain-retry",
     "name": "Explain retry with backoff",
     "prompt": "In 2-3 sentences, explain why a client should use exponential backoff when retrying a failed API call.",
+    "referenceAnswer": "Retrying immediately can overload a server that is already struggling, making the outage worse. Exponential backoff makes the wait grow longer after each failure, which spreads retries out and gives the server time to recover.",
     "scorer": {
       "type": "judge",
       "rubric": "PASS only if the answer (1) says retrying too quickly can overload a struggling server, and (2) says waits grow longer after each failure. Otherwise FAIL."

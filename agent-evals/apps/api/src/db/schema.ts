@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   name         TEXT NOT NULL,
   prompt       TEXT NOT NULL,
   scorer_type  TEXT NOT NULL CHECK (scorer_type IN ('regex', 'judge')),
-  scorer_spec  TEXT NOT NULL
+  scorer_spec  TEXT NOT NULL,
+  reference_answer TEXT
 );
 
 CREATE TABLE IF NOT EXISTS configs (
@@ -18,7 +19,8 @@ CREATE TABLE IF NOT EXISTS configs (
   toolsets        TEXT NOT NULL,
   skills          TEXT NOT NULL,
   max_turns       INTEGER NOT NULL,
-  run_budget_sec  INTEGER NOT NULL
+  run_budget_sec  INTEGER NOT NULL,
+  mock_pass_rate  REAL CHECK (mock_pass_rate IS NULL OR (mock_pass_rate >= 0 AND mock_pass_rate <= 1))
 );
 
 CREATE TABLE IF NOT EXISTS experiments (

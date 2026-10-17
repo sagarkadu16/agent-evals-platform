@@ -8,6 +8,7 @@ interface SeedTask {
   id: string;
   name: string;
   prompt: string;
+  referenceAnswer?: string;
   scorer: { type: 'regex' | 'judge'; [key: string]: unknown };
 }
 
@@ -28,18 +29,19 @@ export class SeedService implements OnModuleInit {
     const db = this.database.db;
 
     const upsertTask = db.prepare(`
-      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec)
-      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec)
+      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec, reference_answer)
+      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec, :reference_answer)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         prompt = excluded.prompt,
         scorer_type = excluded.scorer_type,
-        scorer_spec = excluded.scorer_spec
+        scorer_spec = excluded.scorer_spec,
+        reference_answer = excluded.reference_answer
     `);
 
     const upsertConfig = db.prepare(`
-      INSERT INTO configs (id, name, model, provider, toolsets, skills, max_turns, run_budget_sec)
-      VALUES (:id, :name, :model, :provider, :toolsets, :skills, :max_turns, :run_budget_sec)
+      INSERT INTO configs (id, name, model, provider, toolsets, skills, max_turns, run_budget_sec, mock_pass_rate)
+      VALUES (:id, :name, :model, :provider, :toolsets, :skills, :max_turns, :run_budget_sec, :mock_pass_rate)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         model = excluded.model,
@@ -47,7 +49,8 @@ export class SeedService implements OnModuleInit {
         toolsets = excluded.toolsets,
         skills = excluded.skills,
         max_turns = excluded.max_turns,
-        run_budget_sec = excluded.run_budget_sec
+        run_budget_sec = excluded.run_budget_sec,
+        mock_pass_rate = excluded.mock_pass_rate
     `);
 
     db.exec('BEGIN');
@@ -60,6 +63,7 @@ export class SeedService implements OnModuleInit {
           prompt: t.prompt,
           scorer_type: type,
           scorer_spec: JSON.stringify(spec),
+          reference_answer: t.referenceAnswer ?? null,
         });
       }
       for (const c of configs) {
@@ -72,6 +76,7 @@ export class SeedService implements OnModuleInit {
           skills: JSON.stringify(c.skills),
           max_turns: c.maxTurns,
           run_budget_sec: c.runBudgetSec,
+          mock_pass_rate: c.mockPassRate ?? null,
         });
       }
       db.exec('COMMIT');
@@ -105,10 +110,19 @@ function validateTask(t: SeedTask) {
   if (t.scorer.type !== 'regex' && t.scorer.type !== 'judge') {
     throw new Error(`Seed task "${t.id}" has unknown scorer type "${t.scorer.type}"`);
   }
+  if (t.referenceAnswer !== undefined && typeof t.referenceAnswer !== 'string') {
+    throw new Error(`Seed task "${t.id}" has a non-string "referenceAnswer"`);
+  }
 }
 
 function validateConfig(c: AgentConfig) {
   for (const key of ['id', 'name', 'model', 'provider', 'toolsets', 'skills', 'maxTurns', 'runBudgetSec'] as const) {
     if (c[key] === undefined) throw new Error(`Seed config "${c.id ?? '?'}" is missing "${key}"`);
+  }
+  if (
+    c.mockPassRate !== undefined &&
+    (typeof c.mockPassRate !== 'number' || c.mockPassRate < 0 || c.mockPassRate > 1)
+  ) {
+    throw new Error(`Seed config "${c.id}" has "mockPassRate" outside 0..1`);
   }
 }

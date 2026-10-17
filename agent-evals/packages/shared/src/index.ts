@@ -7,6 +7,8 @@ export interface AgentConfig {
   skills: string[];
   maxTurns: number;
   runBudgetSec: number;
+  /** MockRunner only: probability (0..1) that a run passes. Default 0.7. */
+  mockPassRate?: number;
 }
 
 export type StepKind = 'tool' | 'result' | 'model';
@@ -37,4 +39,6 @@ export interface TaskDef {
   prompt: string;
   scorerType: ScorerType;
   scorerSpec: Record<string, unknown>;
+  /** A known-good answer. MockRunner returns it on a pass. */
+  referenceAnswer?: string;
 }
