@@ -1,10 +1,56 @@
 [
   {
-    "id": "math-mult",
-    "name": "Simple multiplication",
-    "prompt": "What is 17 multiplied by 23? Reply with only the number, nothing else.",
-    "referenceAnswer": "391",
-    "scorer": { "type": "regex", "pattern": "^\\s*391\\s*$" }
+    "id": "change-due",
+    "name": "Change due (arithmetic with steps)",
+    "prompt": "A shop sells pens for $3.40 each. Ana buys 17 pens and pays with a $100 bill. How much change does she get? Reply with only the amount as a number with two decimals, for example 12.34. No currency symbol, no words.",
+    "referenceAnswer": "42.20",
+    "scorer": {
+      "type": "regex",
+      "pattern": "^42\\.20$"
+    }
+  },
+  {
+    "id": "third-friday",
+    "name": "Third Friday of March 2027 (date reasoning, strict format)",
+    "prompt": "What is the date of the third Friday of March 2027? Reply with only the date in ISO 8601 format (YYYY-MM-DD), nothing else.",
+    "referenceAnswer": "2027-03-19",
+    "scorer": {
+      "type": "regex",
+      "pattern": "^2027-03-19$"
+    }
+  },
+  {
+    "id": "sort-words",
+    "name": "Case-insensitive sort (strict output format)",
+    "prompt": "Sort these words alphabetically, ignoring upper/lower case: Banana, apple, cherry, Date, elderberry, fig. Keep each word's original capitalization. Reply with only the sorted words separated by commas with no spaces, nothing else.",
+    "referenceAnswer": "apple,Banana,cherry,Date,elderberry,fig",
+    "scorer": {
+      "type": "regex",
+      "pattern": "^apple,Banana,cherry,Date,elderberry,fig$"
+    }
+  },
+  {
+    "id": "extract-503",
+    "name": "Extract the request ID of the HTTP 503 from a log",
+    "prompt": "Below is an access log. Each line is: timestamp, method, path, HTTP status, request ID, latency. Give the request ID of the only request that returned HTTP status 503. Reply with only the request ID.\n\n2026-10-01T12:00:01Z GET /api/orders 200 req-1a2b3c 34ms\n2026-10-01T12:00:02Z POST /api/orders 201 req-4d5e6f 88ms\n2026-10-01T12:00:03Z GET /api/users/42 404 req-9c8b7a 12ms\n2026-10-01T12:00:04Z GET /api/orders 200 req-503abc 503ms\n2026-10-01T12:00:05Z GET /api/reports 500 req-2e4f6a 1201ms\n2026-10-01T12:00:06Z PUT /api/orders/7 200 req-6b7c8d 47ms\n2026-10-01T12:00:07Z GET /api/health 200 req-0f1e2d 3ms\n2026-10-01T12:00:08Z GET /api/reports 504 req-5a5b5c 30000ms\n2026-10-01T12:00:09Z POST /api/payments 503 req-7f3a91 15ms\n2026-10-01T12:00:10Z GET /api/orders 200 req-3c3d3e 29ms\n2026-10-01T12:00:11Z DELETE /api/orders/7 204 req-8e9f0a 21ms\n2026-10-01T12:00:12Z GET /api/users/42 200 req-1b2c3d 18ms",
+    "referenceAnswer": "req-7f3a91",
+    "scorer": {
+      "type": "regex",
+      "pattern": "^req-7f3a91$"
+    }
+  },
+  {
+    "id": "file-csv-sum",
+    "name": "Sum shipped orders from orders.csv (file tools)",
+    "prompt": "Your working folder contains orders.csv. Use your file tools to read it. What is the total amount of all orders whose status is \"shipped\"? Reply with only the number with two decimals, for example 123.45.",
+    "referenceAnswer": "1287.45",
+    "files": {
+      "orders.csv": "id,customer,amount,status\n1001,Acme Corp,120.50,shipped\n1002,Globex,89.99,pending\n1003,\"Smith, J.\",245.00,shipped\n1004,Initech,310.25,cancelled\n1005,Umbrella,75.10,shipped\n1006,Hooli,199.99,shipped\n1007,Stark Ltd,420.00,pending\n1008,Wayne Ent,58.40,shipped\n1009,Acme Corp,133.33,returned\n1010,Globex,264.11,shipped\n1011,Hooli,47.25,pending\n1012,Soylent,211.85,shipped\n1013,Umbrella,98.60,cancelled\n1014,Tyrell,112.50,shipped\n1015,Wonka,305.00,pending\n"
+    },
+    "scorer": {
+      "type": "regex",
+      "pattern": "^1287\\.45$"
+    }
   },
   {
     "id": "explain-retry",
@@ -14,6 +60,52 @@
     "scorer": {
       "type": "judge",
       "rubric": "PASS only if the answer (1) says retrying too quickly can overload a struggling server, and (2) says waits grow longer after each failure. Otherwise FAIL."
+    }
+  },
+  {
+    "id": "explain-idempotency",
+    "name": "Explain idempotency keys for payments",
+    "prompt": "In 2-3 sentences, explain why a payment API should accept an idempotency key on requests that create a charge.",
+    "referenceAnswer": "If a request times out or the network drops, the client will retry, and without protection the retry can charge the customer twice. With an idempotency key, the server recognises a repeated key and returns the result of the first request instead of creating a second charge.",
+    "scorer": {
+      "type": "judge",
+      "rubric": "PASS only if ALL of these hold: (1) it says a client may retry a request (for example after a timeout or network error) and that this can cause a duplicate or double charge; (2) it says the server recognises a repeated key and returns the original result instead of charging again; (3) it is at most 3 sentences. Otherwise FAIL."
+    }
+  },
+  {
+    "id": "multi-part-format",
+    "name": "Follow four formatting rules at once (SQLite WAL)",
+    "prompt": "Write exactly 3 bullet points about SQLite's WAL (write-ahead logging) mode. Rules: each bullet starts with \"- \"; each bullet is under 15 words; the second bullet must mention readers; after the bullets, write a final line containing only DONE. Output nothing else.",
+    "referenceAnswer": "- WAL appends changes to a separate log file before checkpointing them.\n- Readers keep working while a single writer commits changes.\n- Checkpoints copy WAL pages back into the main database file.\nDONE",
+    "scorer": {
+      "type": "judge",
+      "rubric": "PASS only if ALL of these hold: (1) there are exactly 3 bullet lines and each starts with \"- \"; (2) every bullet has fewer than 15 words; (3) the second bullet mentions readers; (4) the last line is exactly DONE; (5) there is no other text before the bullets or after DONE; (6) no bullet states something clearly false about SQLite WAL mode. Otherwise FAIL."
+    }
+  },
+  {
+    "id": "file-bug-review",
+    "name": "Find the off-by-one bug in utils.js (file tools)",
+    "prompt": "Your working folder contains utils.js. Read it with your file tools. It has one bug. In one sentence, explain the bug and what goes wrong, then give the corrected line of code.",
+    "referenceAnswer": "The loop condition `i <= numbers.length` runs one step past the end, so it adds `numbers[numbers.length]` (undefined) and the sum becomes NaN. Corrected line: `for (let i = 0; i < numbers.length; i++) {`",
+    "files": {
+      "utils.js": "// Returns the sum of all numbers in the array.\nfunction sum(numbers) {\n  let total = 0;\n  for (let i = 0; i <= numbers.length; i++) {\n    total += numbers[i];\n  }\n  return total;\n}\n\nmodule.exports = { sum };\n"
+    },
+    "scorer": {
+      "type": "judge",
+      "rubric": "PASS only if ALL of these hold: (1) it identifies the loop condition `i <= numbers.length` as the bug; (2) it says the loop reads one element past the end (an undefined value), or that the result becomes NaN; (3) it gives a corrected line that uses `i < numbers.length`. Otherwise FAIL."
+    }
+  },
+  {
+    "id": "file-action-items",
+    "name": "Extract action items from meeting notes (file tools)",
+    "prompt": "Your working folder contains meeting-notes.md. Read it with your file tools and list every action item that a person committed to. Output one line per item in the format: Owner - task - YYYY-MM-DD. Output nothing else.",
+    "referenceAnswer": "Priya - write the incident summary for the payments errors - 2026-10-14\nMarcus - add idempotency keys to the payments endpoint - 2026-10-15\nLena - share the dashboard link with the support team - 2026-10-13",
+    "files": {
+      "meeting-notes.md": "# Platform sync - 2026-10-12\n\nAttendees: Priya, Marcus, Lena, Tom\n\n## Discussion\n- Error rate on /api/payments went up after Friday's deploy. Marcus thinks the new retry logic is the cause.\n  Priya agreed to write the incident summary for the payments errors by 2026-10-14.\n- Lena showed the new dashboard. Everyone liked it.\n- Tom said we could maybe move the cron jobs onto the queue later. No decision yet.\n\n## Decisions\n- Roll back the retry change if the fix is not ready by Wednesday.\n\n## Next steps\n- Marcus will add idempotency keys to the payments endpoint by 2026-10-15.\n- Lena: share the dashboard link with the support team by 2026-10-13.\n"
+    },
+    "scorer": {
+      "type": "judge",
+      "rubric": "PASS only if ALL of these hold: (1) there are exactly 3 items; (2) one item is Priya writing the incident summary, due 2026-10-14; (3) one item is Marcus adding idempotency keys to the payments endpoint, due 2026-10-15; (4) one item is Lena sharing the dashboard link with the support team, due 2026-10-13; (5) Tom's cron-job idea is NOT listed, because nobody committed to it; (6) there is no text other than the items. Small wording or dash differences are fine. Otherwise FAIL."
     }
   }
 ]

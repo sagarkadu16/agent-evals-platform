@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { AgentConfig } from '@evals/shared';
 import { DatabaseService } from './database.service.js';
+import { isSafeRelativePath } from '../common/safe-path.js';
 
 interface SeedTask {
   id: string;
   name: string;
   prompt: string;
   referenceAnswer?: string;
+  files?: Record<string, string>;
   scorer: { type: 'regex' | 'judge'; [key: string]: unknown };
 }
 
@@ -29,14 +31,16 @@ export class SeedService implements OnModuleInit {
     const db = this.database.db;
 
     const upsertTask = db.prepare(`
-      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec, reference_answer)
-      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec, :reference_answer)
+      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec, reference_answer, files)
+      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec, :reference_answer, :files)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         prompt = excluded.prompt,
         scorer_type = excluded.scorer_type,
         scorer_spec = excluded.scorer_spec,
-        reference_answer = excluded.reference_answer
+        reference_answer = excluded.reference_answer,
+        files = excluded.files,
+        active = 1
     `);
 
     const upsertConfig = db.prepare(`
@@ -64,8 +68,13 @@ export class SeedService implements OnModuleInit {
           scorer_type: type,
           scorer_spec: JSON.stringify(spec),
           reference_answer: t.referenceAnswer ?? null,
+          files: t.files ? JSON.stringify(t.files) : null,
         });
       }
+      // Tasks no longer in tasks.json are retired, not deleted: their past runs still point at them.
+      db.prepare(
+        `UPDATE tasks SET active = 0 WHERE id NOT IN (SELECT value FROM json_each(?))`,
+      ).run(JSON.stringify(tasks.map((t) => t.id)));
       for (const c of configs) {
         upsertConfig.run({
           id: c.id,
@@ -112,6 +121,15 @@ function validateTask(t: SeedTask) {
   }
   if (t.referenceAnswer !== undefined && typeof t.referenceAnswer !== 'string') {
     throw new Error(`Seed task "${t.id}" has a non-string "referenceAnswer"`);
+  }
+  if (t.files !== undefined) {
+    if (typeof t.files !== 'object' || t.files === null || Array.isArray(t.files)) {
+      throw new Error(`Seed task "${t.id}" has "files" that is not an object of path -> content`);
+    }
+    for (const [path, content] of Object.entries(t.files)) {
+      if (!isSafeRelativePath(path)) throw new Error(`Seed task "${t.id}" has unsafe file path "${path}"`);
+      if (typeof content !== 'string') throw new Error(`Seed task "${t.id}" file "${path}" content is not a string`);
+    }
   }
 }
 

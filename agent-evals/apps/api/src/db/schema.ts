@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   prompt       TEXT NOT NULL,
   scorer_type  TEXT NOT NULL CHECK (scorer_type IN ('regex', 'judge')),
   scorer_spec  TEXT NOT NULL,
-  reference_answer TEXT
+  reference_answer TEXT,
+  files        TEXT,
+  active       INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS configs (
@@ -41,9 +43,14 @@ CREATE TABLE IF NOT EXISTS runs (
   task_id        TEXT NOT NULL REFERENCES tasks(id),
   config_id      TEXT NOT NULL REFERENCES configs(id),
   repeat_index   INTEGER NOT NULL,
-  status         TEXT NOT NULL DEFAULT 'queued',
+  seq            INTEGER NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'queued'
+                 CHECK (status IN ('queued', 'running', 'done', 'error')),
   passed         INTEGER,
   score_reason   TEXT,
+  judge_input_tokens  INTEGER,
+  judge_output_tokens INTEGER,
+  judge_cost_usd      REAL,
   final_answer   TEXT,
   input_tokens   INTEGER,
   output_tokens  INTEGER,
@@ -66,5 +73,6 @@ CREATE TABLE IF NOT EXISTS steps (
 );
 
 CREATE INDEX IF NOT EXISTS idx_runs_experiment ON runs(experiment_id);
+CREATE INDEX IF NOT EXISTS idx_runs_queue ON runs(status, seq);
 CREATE INDEX IF NOT EXISTS idx_steps_run ON steps(run_id);
 `;

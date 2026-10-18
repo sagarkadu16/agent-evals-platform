@@ -7,6 +7,8 @@ export interface RunInput {
   config: AgentConfig;
   /** A fresh, empty folder for this run only (Hermes --in DIR). */
   workDir: string;
+  /** Aborted when the executor's hard timeout fires; runners should stop work (e.g. kill the child process). */
+  signal?: AbortSignal;
 }
 
 /**
