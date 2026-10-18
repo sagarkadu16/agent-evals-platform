@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-
-const status = ref('checking…');
-
-onMounted(async () => {
-  try {
-    const r = await fetch('/api/health');
-    const j = await r.json();
-    status.value = `${j.status} (runner: ${j.runner})`;
-  } catch {
-    status.value = 'API unreachable';
-  }
-});
+import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <h1>Agent Evals</h1>
-  <p>API: {{ status }}</p>
+  <header class="topbar">
+    <RouterLink to="/" class="brand">Agent Evals</RouterLink>
+  </header>
+  <main class="page">
+    <!-- Keyed by path (not query), so switching experiments reloads but filtering runs does not. -->
+    <RouterView :key="$route.path" />
+  </main>
 </template>
