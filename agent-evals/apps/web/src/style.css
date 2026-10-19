@@ -66,14 +66,13 @@ td.wrap { white-space: normal; }
 .badge.done, .badge.pass { background: var(--good-bg); color: var(--good); }
 .badge.error, .badge.fail { background: var(--bad-bg); color: var(--bad); }
 .badge.running { background: var(--warn-bg); color: var(--text); }
+.chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 4px; font-size: 0.75rem; background: var(--neutral-bg); color: var(--text); white-space: nowrap; }
 
-form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
 label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); }
 input, select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.45rem 0.6rem; }
 fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0 0; }
 legend { font-size: 0.85rem; color: var(--muted); padding: 0 0.3rem; }
-.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.35rem 1rem; }
-.checks label { flex-direction: row; align-items: center; color: var(--text); font-size: 0.9rem; }
+input[type='checkbox'] { width: 1rem; height: 1rem; margin: 0; padding: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
 .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 
 button { font: inherit; border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer; }

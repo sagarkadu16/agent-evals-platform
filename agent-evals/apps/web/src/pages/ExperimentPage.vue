@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ConfigStats, ExperimentSummary, RunRecord } from '@evals/shared'
+import type { AgentConfig, ConfigStats, ExperimentSummary, RunRecord } from '@evals/shared'
 import { api, type ExperimentDetail } from '../api'
 import { usePolling } from '../composables/usePolling'
-import CiBar from '../components/CiBar.vue'
+import ComparisonSummary from '../components/ComparisonSummary.vue'
+import ConfigDiff from '../components/ConfigDiff.vue'
 import { percent, seconds, usd } from '../format'
 
 const route = useRoute()
@@ -25,13 +26,20 @@ const polling = usePolling(async () => {
   return experiment.value?.status !== 'done'
 })
 
+// Config details for the "What changed" box.
+const configs = ref<AgentConfig[]>([])
+onMounted(async () => {
+  try {
+    configs.value = await api.configs()
+  } catch {
+    // The box is optional; the rest of the page does not need it.
+  }
+})
+const configA = computed(() => configs.value.find((c) => c.id === experiment.value?.configAId))
+const configB = computed(() => configs.value.find((c) => c.id === experiment.value?.configBId))
+
 const total = computed(() => experiment.value?.runs.length ?? 0)
 const finished = computed(() => (experiment.value ? experiment.value.counts.done + experiment.value.counts.error : 0))
-
-const verdictLabel = computed(() => {
-  const v = summary.value?.comparison.verdict
-  return v === 'better' ? 'B better' : v === 'worse' ? 'B worse' : 'Inconclusive'
-})
 
 const configRows = computed((): { side: 'A' | 'B'; stats: ConfigStats }[] =>
   summary.value
@@ -99,22 +107,8 @@ function result(r: RunRecord): { label: string; cls: string } {
     </p>
     <div v-if="experiment.status !== 'done'" class="notice">Still running. This page updates every 3 seconds.</div>
 
-    <!-- Verdict -->
-    <div class="card verdict-card">
-      <div class="verdict" :class="summary.comparison.verdict">{{ verdictLabel }}</div>
-      <p>{{ summary.comparison.explanation }}</p>
-      <CiBar
-        v-if="summary.comparison.ci95 && summary.comparison.difference !== null"
-        :difference="summary.comparison.difference"
-        :low="summary.comparison.ci95.low"
-        :high="summary.comparison.ci95.high"
-        :verdict="summary.comparison.verdict"
-      />
-      <p class="small muted">
-        Paired bootstrap over {{ summary.comparison.tasksUsed }} tasks, {{ summary.comparison.iterations }} resamples
-        (seed {{ summary.comparison.seed }}). Only scored runs count: errors and judge errors are left out.
-      </p>
-    </div>
+    <ConfigDiff v-if="configA && configB" :a="configA" :b="configB" />
+    <ComparisonSummary :summary="summary" />
 
     <!-- Per-config table -->
     <h2>Per config</h2>
@@ -220,9 +214,5 @@ function result(r: RunRecord): { label: string; cls: string } {
 </template>
 
 <style scoped>
-.verdict-card { margin-top: 1.5rem; }
-.verdict { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.01em; color: var(--neutral); }
-.verdict.better { color: var(--good); }
-.verdict.worse { color: var(--bad); }
 tr.differs td { background: var(--warn-bg); }
 </style>

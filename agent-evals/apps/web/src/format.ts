@@ -15,3 +15,6 @@ export const usd = (v: number | null | undefined) =>
   v === null || v === undefined ? '—' : `$${v < 0.01 && v > 0 ? v.toFixed(5) : v.toFixed(4)}`
 
 export const dateTime = (ms: number) => new Date(ms).toLocaleString()
+
+/** A ratio as a factor: 1.63 -> "1.6×", 17.4 -> "17×". */
+export const factor = (x: number) => `${x < 10 ? x.toFixed(1) : Math.round(x)}×`
