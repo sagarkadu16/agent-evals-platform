@@ -26,18 +26,27 @@ const regexPasses = async (t: SeedTask, answer: string) =>
   (await new RegexScorer().score(asTaskDef(t), { finalAnswer: answer, steps: [], tokens: { input: 0, output: 0 }, costUsd: 0 }))
     .passed;
 
-test('10 tasks with unique ids: 5 regex, 5 judge, 3 with files', () => {
-  assert.equal(tasks.length, 10);
-  assert.equal(new Set(tasks.map((t) => t.id)).size, 10);
-  assert.equal(tasks.filter((t) => t.scorer.type === 'regex').length, 5);
-  assert.equal(tasks.filter((t) => t.scorer.type === 'judge').length, 5);
-  assert.equal(tasks.filter((t) => t.files).length, 3);
+/** Splits CSV text into rows of fields; a quoted field may contain commas. Drops the header row. */
+function parseCsv(text: string): string[][] {
+  return text
+    .trim()
+    .split('\n')
+    .slice(1)
+    .map((line) => [...line.matchAll(/"([^"]*)"(?:,|$)|([^,]*)(?:,|$)/g)].slice(0, -1).map((m) => m[1] ?? m[2]));
+}
+
+test('15 tasks with unique ids: 8 regex, 7 judge, 8 with files', () => {
+  assert.equal(tasks.length, 15);
+  assert.equal(new Set(tasks.map((t) => t.id)).size, 15);
+  assert.equal(tasks.filter((t) => t.scorer.type === 'regex').length, 8);
+  assert.equal(tasks.filter((t) => t.scorer.type === 'judge').length, 7);
+  assert.equal(tasks.filter((t) => t.files).length, 8);
 });
 
 test('every task has a referenceAnswer; every rubric lists concrete PASS conditions', () => {
   for (const t of tasks) {
     assert.ok(t.referenceAnswer?.trim(), `${t.id} has no referenceAnswer`);
-    if (t.scorer.type === 'judge') assert.match(t.scorer.rubric ?? '', /^PASS only if/, t.id);
+    if (t.scorer.type === 'judge') assert.match(t.scorer.rubric ?? '', /PASS only if/, t.id);
   }
 });
 
@@ -57,6 +66,12 @@ test('regex tasks reject plausible near-misses', async () => {
     ['sort-words', 'apple,banana,cherry,date,elderberry,fig'],
     ['extract-503', 'req-503abc'],
     ['file-csv-sum', '1287.4'],
+    ['lead-triage', 'Aisha Khan,Chloe Martin,Elena Rossi,Gus Weber,Ivan Petrov,Jade Lin,Lara Gomez'],
+    ['lead-triage', 'Aisha Khan, Chloe Martin, Gus Weber, Ivan Petrov, Jade Lin, Lara Gomez'],
+    ['invoice-reconcile', 'UNPAID: INV-002,INV-004,INV-005,INV-007 | TOTAL: 1816.25'],
+    ['invoice-reconcile', 'UNPAID: INV-002,INV-004,INV-005 | TOTAL: 1776.25'],
+    ['missing-file-recovery', '10'],
+    ['missing-file-recovery', '30'],
   ];
   for (const [id, answer] of misses) assert.equal(await regexPasses(byId(id), answer), false, `${id}: ${answer}`);
 });
@@ -81,6 +96,32 @@ test('facts behind the answers are right', () => {
   const lines = byId('multi-part-format').referenceAnswer!.split('\n');
   assert.equal(lines.at(-1), 'DONE');
   for (const b of lines.slice(0, 3)) assert.ok(b.startsWith('- ') && b.slice(2).split(/\s+/).length < 15, b);
+
+  // Qualified leads on 2026-10-15: 50+ employees, budget 10000+, last contact on or after 2026-09-15.
+  const leads = parseCsv(byId('lead-triage').files!['leads.csv']);
+  assert.ok(leads.some((r) => r[1] === 'Martin, Hale & Co'), 'quoted company name parsed as one field');
+  const cutoff = Date.UTC(2026, 9, 15) - 30 * 86_400_000;
+  const qualified = leads
+    .filter(([, , employees, budget, lastContact]) =>
+      Number(employees) >= 50 && Number(budget) >= 10000 && Date.parse(lastContact) >= cutoff)
+    .map((r) => r[0])
+    .sort();
+  assert.equal(qualified.join(','), byId('lead-triage').referenceAnswer);
+
+  // Unpaid invoices, with refs like "inv-003" and "INV007" normalised to "INV-003".
+  const recon = byId('invoice-reconcile').files!;
+  const norm = (ref: string) => ref.toUpperCase().replace(/^INV-?/, 'INV-');
+  const paid = new Map<string, number>();
+  for (const [, ref, amount] of parseCsv(recon['payments.csv'])) paid.set(norm(ref), (paid.get(norm(ref)) ?? 0) + Number(amount));
+  const unpaid = parseCsv(recon['invoices.csv'])
+    .map(([id, , amount]) => ({ id, owed: Number(amount) - (paid.get(id) ?? 0) }))
+    .filter((i) => i.owed > 0.005)
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const owed = unpaid.reduce((s, i) => s + i.owed, 0);
+  assert.equal(
+    `UNPAID: ${unpaid.map((i) => i.id).join(',')} | TOTAL: ${owed.toFixed(2)}`,
+    byId('invoice-reconcile').referenceAnswer,
+  );
 });
 
 test('task file paths are safe relative paths', () => {

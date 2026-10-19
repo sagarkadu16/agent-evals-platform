@@ -20,5 +20,16 @@
     "maxTurns": 10,
     "runBudgetSec": 120,
     "mockPassRate": 0.85
+  },
+  {
+    "id": "config-c-opus",
+    "name": "C: Claude Opus 5.5",
+    "model": "anthropic/claude-opus-5.5",
+    "provider": "openrouter",
+    "toolsets": ["file"],
+    "skills": [],
+    "maxTurns": 10,
+    "runBudgetSec": 120,
+    "mockPassRate": 0.9
   }
 ]
