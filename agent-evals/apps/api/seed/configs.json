@@ -1,7 +1,7 @@
 [
   {
     "id": "config-a-cheap",
-    "name": "A: DeepSeek V4 Flash",
+    "name": "DeepSeek V4 Flash",
     "model": "deepseek/deepseek-v4-flash-0731",
     "provider": "openrouter",
     "toolsets": ["file"],
@@ -11,8 +11,31 @@
     "mockPassRate": 0.6
   },
   {
+    "id": "a-deepseek-skill",
+    "name": "DeepSeek V4 Flash + careful-data-check skill",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "openrouter",
+    "toolsets": ["file"],
+    "skills": ["careful-data-check"],
+    "maxTurns": 10,
+    "runBudgetSec": 120,
+    "mockPassRate": 0.6
+  },
+  {
+    "id": "a-deepseek-memory",
+    "name": "DeepSeek V4 Flash + sales-policy memory",
+    "model": "deepseek/deepseek-v4-flash-0731",
+    "provider": "openrouter",
+    "toolsets": ["file"],
+    "skills": [],
+    "memoryFiles": ["memory/sales-policy.md"],
+    "maxTurns": 10,
+    "runBudgetSec": 120,
+    "mockPassRate": 0.6
+  },
+  {
     "id": "config-b-sonnet",
-    "name": "B: Claude Sonnet 5.5",
+    "name": "Claude Sonnet 5.5",
     "model": "anthropic/claude-sonnet-5.5",
     "provider": "openrouter",
     "toolsets": ["file"],
@@ -23,7 +46,7 @@
   },
   {
     "id": "config-c-opus",
-    "name": "C: Claude Opus 5.5",
+    "name": "Claude Opus 5.5",
     "model": "anthropic/claude-opus-5.5",
     "provider": "openrouter",
     "toolsets": ["file"],

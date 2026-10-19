@@ -17,9 +17,9 @@ const configs = [
 ];
 const task = (id: string) => ({ id, name: id, prompt: 'p', scorer: { type: 'regex', pattern: '^x$' } });
 
-function seed(dbPath: string, taskIds: string[]) {
+function seed(dbPath: string, taskIds: string[], seedConfigs: object[] = configs) {
   writeFileSync(join(tmp, 'tasks.json'), JSON.stringify(taskIds.map(task)));
-  writeFileSync(join(tmp, 'configs.json'), JSON.stringify(configs));
+  writeFileSync(join(tmp, 'configs.json'), JSON.stringify(seedConfigs));
   process.env.DB_PATH = dbPath;
   process.env.SEED_DIR = tmp;
   const database = new DatabaseService();
@@ -55,4 +55,36 @@ test('a DB created before the "active" column existed gets it added, data kept',
   assert.equal(catalog.getTask('legacy')?.active, false, 'kept, and retired since it is not in tasks.json');
   assert.deepEqual(catalog.listTasks().map((t) => t.id), ['t1']);
   database.onModuleDestroy();
+});
+
+test('config memoryFiles round-trip through the DB; configs without them get an empty list', () => {
+  const withMemory = { ...configs[0], id: 'm', memoryFiles: ['memory/sales-policy.md'] };
+  const { database, catalog } = seed(join(tmp, 'memory.db'), ['t1'], [configs[0], withMemory]);
+  assert.deepEqual(catalog.getConfig('m')?.memoryFiles, ['memory/sales-policy.md']);
+  assert.deepEqual(catalog.getConfig('c')?.memoryFiles, []);
+  database.onModuleDestroy();
+});
+
+test('a DB created before the "memory_files" column existed gets it added, configs kept', () => {
+  const dbPath = join(tmp, 'old-configs.db');
+  const old = new DatabaseSync(dbPath);
+  old.exec(`CREATE TABLE configs (id TEXT PRIMARY KEY, name TEXT NOT NULL, model TEXT NOT NULL,
+    provider TEXT NOT NULL, toolsets TEXT NOT NULL, skills TEXT NOT NULL, max_turns INTEGER NOT NULL,
+    run_budget_sec INTEGER NOT NULL, mock_pass_rate REAL)`);
+  old.prepare(`INSERT INTO configs VALUES ('legacy', 'legacy', 'm', 'p', '[]', '[]', 1, 10, NULL)`).run();
+  old.close();
+
+  const { database, catalog } = seed(dbPath, ['t1']);
+  assert.deepEqual(catalog.getConfig('legacy')?.memoryFiles, []);
+  database.onModuleDestroy();
+});
+
+test('memory files outside memory/ are rejected at seed time', () => {
+  for (const bad of ['notes/x.md', 'memory/../.env', '/etc/passwd']) {
+    assert.throws(
+      () => seed(join(tmp, 'bad.db'), ['t1'], [{ ...configs[0], memoryFiles: [bad] }]),
+      /not a path under memory\//,
+      bad,
+    );
+  }
 });

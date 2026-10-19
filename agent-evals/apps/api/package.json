@@ -15,7 +15,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint src/ test/",
-    "test": "vitest run",
+    "test": "npm run test:unit",
     "test:unit": "nest build && node --test \"dist/**/*.test.js\"",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

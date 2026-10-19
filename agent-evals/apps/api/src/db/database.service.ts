@@ -23,6 +23,8 @@ export class DatabaseService implements OnModuleDestroy {
   private addMissingColumns() {
     const added: [table: string, column: string, definition: string][] = [
       ['tasks', 'active', 'INTEGER NOT NULL DEFAULT 1'],
+      ['configs', 'memory_files', "TEXT NOT NULL DEFAULT '[]'"],
+      ['tasks', 'tags', "TEXT NOT NULL DEFAULT '[]'"],
     ];
     for (const [table, column, definition] of added) {
       const cols = this.db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];

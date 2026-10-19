@@ -11,6 +11,7 @@ interface SeedTask {
   prompt: string;
   referenceAnswer?: string;
   files?: Record<string, string>;
+  tags?: string[];
   scorer: { type: 'regex' | 'judge'; pattern?: string; rubric?: string };
 }
 const tasks = JSON.parse(
@@ -35,16 +36,17 @@ function parseCsv(text: string): string[][] {
     .map((line) => [...line.matchAll(/"([^"]*)"(?:,|$)|([^,]*)(?:,|$)/g)].slice(0, -1).map((m) => m[1] ?? m[2]));
 }
 
-test('15 tasks with unique ids: 8 regex, 7 judge, 8 with files', () => {
-  assert.equal(tasks.length, 15);
-  assert.equal(new Set(tasks.map((t) => t.id)).size, 15);
+test('16 tasks with unique ids: 8 regex, 8 judge, 9 with files', () => {
+  assert.equal(tasks.length, 16);
+  assert.equal(new Set(tasks.map((t) => t.id)).size, 16);
   assert.equal(tasks.filter((t) => t.scorer.type === 'regex').length, 8);
-  assert.equal(tasks.filter((t) => t.scorer.type === 'judge').length, 7);
-  assert.equal(tasks.filter((t) => t.files).length, 8);
+  assert.equal(tasks.filter((t) => t.scorer.type === 'judge').length, 8);
+  assert.equal(tasks.filter((t) => t.files).length, 9);
 });
 
-test('every task has a referenceAnswer; every rubric lists concrete PASS conditions', () => {
+test('every task has a referenceAnswer and tags; every rubric lists concrete PASS conditions', () => {
   for (const t of tasks) {
+    assert.ok(t.tags?.length, `${t.id} has no tags`);
     assert.ok(t.referenceAnswer?.trim(), `${t.id} has no referenceAnswer`);
     if (t.scorer.type === 'judge') assert.match(t.scorer.rubric ?? '', /PASS only if/, t.id);
   }
@@ -126,4 +128,13 @@ test('facts behind the answers are right', () => {
 
 test('task file paths are safe relative paths', () => {
   for (const t of tasks) for (const p of Object.keys(t.files ?? {})) assert.ok(isSafeRelativePath(p), `${t.id}: ${p}`);
+});
+
+test('discount-reply needs the memory: the policy is not in the prompt or files, but is in the reference answer', () => {
+  const t = byId('discount-reply');
+  const visible = [t.prompt, ...Object.values(t.files ?? {})].join('\n');
+  for (const fact of ['cal.example.com/sam-reed', '10%', 'annual']) {
+    assert.ok(!visible.includes(fact), `"${fact}" must only come from memory`);
+    assert.ok(t.referenceAnswer!.includes(fact), `reference answer should use "${fact}"`);
+  }
 });

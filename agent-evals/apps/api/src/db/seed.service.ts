@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import type { AgentConfig } from '@evals/shared';
 import { DatabaseService } from './database.service.js';
 import { isSafeRelativePath } from '../common/safe-path.js';
+import { MEMORY_DIR } from '../common/assets.js';
 
 interface SeedTask {
   id: string;
@@ -11,6 +12,7 @@ interface SeedTask {
   prompt: string;
   referenceAnswer?: string;
   files?: Record<string, string>;
+  tags?: string[];
   scorer: { type: 'regex' | 'judge'; [key: string]: unknown };
 }
 
@@ -31,8 +33,8 @@ export class SeedService implements OnModuleInit {
     const db = this.database.db;
 
     const upsertTask = db.prepare(`
-      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec, reference_answer, files)
-      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec, :reference_answer, :files)
+      INSERT INTO tasks (id, name, prompt, scorer_type, scorer_spec, reference_answer, files, tags)
+      VALUES (:id, :name, :prompt, :scorer_type, :scorer_spec, :reference_answer, :files, :tags)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         prompt = excluded.prompt,
@@ -40,18 +42,20 @@ export class SeedService implements OnModuleInit {
         scorer_spec = excluded.scorer_spec,
         reference_answer = excluded.reference_answer,
         files = excluded.files,
+        tags = excluded.tags,
         active = 1
     `);
 
     const upsertConfig = db.prepare(`
-      INSERT INTO configs (id, name, model, provider, toolsets, skills, max_turns, run_budget_sec, mock_pass_rate)
-      VALUES (:id, :name, :model, :provider, :toolsets, :skills, :max_turns, :run_budget_sec, :mock_pass_rate)
+      INSERT INTO configs (id, name, model, provider, toolsets, skills, memory_files, max_turns, run_budget_sec, mock_pass_rate)
+      VALUES (:id, :name, :model, :provider, :toolsets, :skills, :memory_files, :max_turns, :run_budget_sec, :mock_pass_rate)
       ON CONFLICT(id) DO UPDATE SET
         name = excluded.name,
         model = excluded.model,
         provider = excluded.provider,
         toolsets = excluded.toolsets,
         skills = excluded.skills,
+        memory_files = excluded.memory_files,
         max_turns = excluded.max_turns,
         run_budget_sec = excluded.run_budget_sec,
         mock_pass_rate = excluded.mock_pass_rate
@@ -69,6 +73,7 @@ export class SeedService implements OnModuleInit {
           scorer_spec: JSON.stringify(spec),
           reference_answer: t.referenceAnswer ?? null,
           files: t.files ? JSON.stringify(t.files) : null,
+          tags: JSON.stringify(t.tags ?? []),
         });
       }
       // Tasks no longer in tasks.json are retired, not deleted: their past runs still point at them.
@@ -83,6 +88,7 @@ export class SeedService implements OnModuleInit {
           provider: c.provider,
           toolsets: JSON.stringify(c.toolsets),
           skills: JSON.stringify(c.skills),
+          memory_files: JSON.stringify(c.memoryFiles ?? []),
           max_turns: c.maxTurns,
           run_budget_sec: c.runBudgetSec,
           mock_pass_rate: c.mockPassRate ?? null,
@@ -131,7 +137,13 @@ function validateTask(t: SeedTask) {
       if (typeof content !== 'string') throw new Error(`Seed task "${t.id}" file "${path}" content is not a string`);
     }
   }
+  if (t.tags !== undefined && (!Array.isArray(t.tags) || !t.tags.every((tag) => TAG.test(tag)))) {
+    throw new Error(`Seed task "${t.id}" has "tags" that are not short lowercase labels`);
+  }
 }
+
+/** Task tags are short lowercase labels like "sales" or "multi-step". */
+const TAG = /^[a-z][a-z0-9 -]{0,23}$/;
 
 function validateConfig(c: AgentConfig) {
   for (const key of ['id', 'name', 'model', 'provider', 'toolsets', 'skills', 'maxTurns', 'runBudgetSec'] as const) {
@@ -142,5 +154,13 @@ function validateConfig(c: AgentConfig) {
     (typeof c.mockPassRate !== 'number' || c.mockPassRate < 0 || c.mockPassRate > 1)
   ) {
     throw new Error(`Seed config "${c.id}" has "mockPassRate" outside 0..1`);
+  }
+  if (c.memoryFiles !== undefined) {
+    if (!Array.isArray(c.memoryFiles)) throw new Error(`Seed config "${c.id}" has "memoryFiles" that is not an array`);
+    for (const p of c.memoryFiles) {
+      if (typeof p !== 'string' || !isSafeRelativePath(p) || !p.startsWith(`${MEMORY_DIR}/`)) {
+        throw new Error(`Seed config "${c.id}" has memory file "${String(p)}" that is not a path under ${MEMORY_DIR}/`);
+      }
+    }
   }
 }

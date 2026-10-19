@@ -5,6 +5,11 @@ export interface AgentConfig {
   provider: string;
   toolsets: string[];
   skills: string[];
+  /**
+   * Memory files (paths under memory/) written into a fresh Hermes memory for every run of this config.
+   * Hermes injects them into the system prompt. Omitted or empty means no memory.
+   */
+  memoryFiles?: string[];
   maxTurns: number;
   runBudgetSec: number;
   /** MockRunner only: probability (0..1) that a run passes. Default 0.7. */
@@ -77,6 +82,33 @@ export interface RunRecord {
 /** Always from B's point of view: 'better' means B beats A. */
 export type Verdict = 'better' | 'worse' | 'inconclusive';
 
+/** Why the pass-rate verdict is what it is, so the UI can say more than "inconclusive". */
+export type QualityReason =
+  | 'no-data' // no task has scored runs on both sides yet
+  | 'too-few-tasks' // fewer tasks than a confidence interval needs
+  | 'no-difference' // both configs passed exactly the same share on every task
+  | 'ci-includes-zero' // a difference, but not a reliable one
+  | 'ci-above-zero' // B reliably passes more often
+  | 'ci-below-zero'; // B reliably passes less often
+
+/**
+ * B compared with A on a per-run number (time or cost), as the ratio B / A.
+ * The CI comes from resampling runs within each task, so it exists even for a single task.
+ */
+export interface MetricComparison {
+  /** Duration uses the median (robust to one slow run); cost uses the mean (it adds up to the bill). */
+  statistic: 'median' | 'mean';
+  a: number | null;
+  b: number | null;
+  /** b / a: below 1 means B is faster or cheaper. Null when A's value is 0 or there is no data. */
+  ratio: number | null;
+  ci95: { low: number; high: number } | null;
+  /** lower / higher when the whole CI is below / above 1; similar when it includes 1. */
+  verdict: 'lower' | 'higher' | 'similar' | null;
+  runsA: number;
+  runsB: number;
+}
+
 export interface ConfigStats {
   configId: string;
   configName: string;
@@ -118,8 +150,15 @@ export interface ExperimentSummary {
     iterations: number;
     seed: number;
     verdict: Verdict;
+    reason: QualityReason;
     explanation: string;
   };
+  /** Wall-clock time per finished run, in ms. */
+  speed: MetricComparison;
+  /** Agent (model) cost per finished run, in USD. Judge cost is the platform's, not the config's. */
+  cost: MetricComparison & { perPassA: number | null; perPassB: number | null };
+  /** One sentence over quality, speed and cost, e.g. "Same pass rate; B is 1.6× faster and 17× more expensive." */
+  headline: string;
 }
 
 export type ScorerType = 'regex' | 'judge';
@@ -136,4 +175,8 @@ export interface TaskDef {
   files?: Record<string, string>;
   /** False once the task is removed from tasks.json: kept for old results, not offered for new experiments. */
   active?: boolean;
+  /** Short labels for finding tasks in the picker, e.g. "sales", "memory". */
+  tags?: string[];
 }
+
+export * from './config-diff.js';

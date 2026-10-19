@@ -16,9 +16,10 @@ coverage/
 *.db-wal
 *.db-shm
 
-# Hermes run scratch folders
+# Hermes run scratch folders (runs now default to the OS temp folder) and the shared Hermes install
 sandbox/
 runs/
+.hermes-base/
 
 # Logs
 *.log

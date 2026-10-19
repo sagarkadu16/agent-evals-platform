@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   scorer_spec  TEXT NOT NULL,
   reference_answer TEXT,
   files        TEXT,
+  tags         TEXT NOT NULL DEFAULT '[]',
   active       INTEGER NOT NULL DEFAULT 1
 );
 
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS configs (
   provider        TEXT NOT NULL,
   toolsets        TEXT NOT NULL,
   skills          TEXT NOT NULL,
+  memory_files    TEXT NOT NULL DEFAULT '[]',
   max_turns       INTEGER NOT NULL,
   run_budget_sec  INTEGER NOT NULL,
   mock_pass_rate  REAL CHECK (mock_pass_rate IS NULL OR (mock_pass_rate >= 0 AND mock_pass_rate <= 1))

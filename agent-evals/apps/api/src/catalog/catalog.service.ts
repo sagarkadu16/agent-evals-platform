@@ -10,6 +10,7 @@ interface TaskRow {
   scorer_spec: string;
   reference_answer: string | null;
   files: string | null;
+  tags: string;
   active: number;
 }
 
@@ -20,6 +21,7 @@ interface ConfigRow {
   provider: string;
   toolsets: string;
   skills: string;
+  memory_files: string;
   max_turns: number;
   run_budget_sec: number;
   mock_pass_rate: number | null;
@@ -66,6 +68,7 @@ function toTask(r: TaskRow): TaskDef {
     referenceAnswer: r.reference_answer ?? undefined,
     files: r.files ? (JSON.parse(r.files) as Record<string, string>) : undefined,
     active: r.active === 1,
+    tags: JSON.parse(r.tags) as string[],
   };
 }
 
@@ -77,6 +80,7 @@ function toConfig(r: ConfigRow): AgentConfig {
     provider: r.provider,
     toolsets: JSON.parse(r.toolsets) as string[],
     skills: JSON.parse(r.skills) as string[],
+    memoryFiles: JSON.parse(r.memory_files) as string[],
     maxTurns: r.max_turns,
     runBudgetSec: r.run_budget_sec,
     mockPassRate: r.mock_pass_rate ?? undefined,

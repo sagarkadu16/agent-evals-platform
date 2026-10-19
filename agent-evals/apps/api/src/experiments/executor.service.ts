@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import type { AgentConfig, RunResult, TaskDef } from '@evals/shared';
 import { DatabaseService } from '../db/database.service.js';
@@ -31,7 +32,11 @@ type Score = Omit<ScoreResult, 'reason'> & { reason: string | null };
 export class ExecutorService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly log = new Logger(ExecutorService.name);
   private readonly concurrency = Math.max(1, Number(process.env.QUEUE_CONCURRENCY ?? 1) || 1);
-  private readonly runsDir = resolve(process.env.RUNS_DIR ?? 'runs');
+  /**
+   * Outside the repo by default: an agent can browse from its run folder, and must not find the
+   * seed files (reference answers), memory files or other runs next to it.
+   */
+  private readonly runsDir = resolve(process.env.RUNS_DIR ?? join(tmpdir(), 'agent-evals-runs'));
   private active = 0;
   private stopping = false;
 
