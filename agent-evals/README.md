@@ -6,6 +6,8 @@ It runs a set of tasks through the [Hermes Agent](https://github.com/NousResearc
 
 **Stack:** NestJS (API) · Vue 3 + Vite (web) · TypeScript throughout · SQLite (`node:sqlite`) · npm workspaces
 
+> 🎥 **Demo video:** [watch the working system](https://drive.google.com/file/d/1S9hPa6WlyR_Rf6IpYgl2mCYvGUxBLrRi/view?usp=sharing)
+>
 > The design document, with architecture, data model, statistics and design decisions, is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---

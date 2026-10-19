@@ -6,12 +6,15 @@ It runs tasks through the [Hermes Agent](https://github.com/NousResearch/hermes-
 
 **Stack:** NestJS · Vue 3 · TypeScript · SQLite (`node:sqlite`) · npm workspaces
 
+## 🎥 [Watch the demo video](https://drive.google.com/file/d/1S9hPa6WlyR_Rf6IpYgl2mCYvGUxBLrRi/view?usp=sharing)
+
 ## 👉 The project lives in [`agent-evals/`](agent-evals/)
 
 | Start here | |
 |---|---|
 | **[README](agent-evals/README.md)** | Setup, how it works, results, costs, assumptions, known limits |
 | **[Design document](agent-evals/ARCHITECTURE.md)** | Architecture, data model, statistics and key design decisions |
+| **[Demo video](https://drive.google.com/file/d/1S9hPa6WlyR_Rf6IpYgl2mCYvGUxBLrRi/view?usp=sharing)** | A walkthrough of the working system |
 
 ## Quick start
 

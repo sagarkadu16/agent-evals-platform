@@ -42,7 +42,7 @@ All three kinds of change can now be tested. Each one is an agent config, and an
 | 3 | Known limits | ✅ | README → Known limits, and `ARCHITECTURE.md` §13. |
 | 4 | Approximate costs | ✅ | README → Approximate costs (per run, per experiment, total spent). |
 | 5 | Results of one real experiment comparing two configs | ✅ | README → Results (a model change and a memory change). |
-| 6 | Video of the working system | ❌ | Not recorded. Do this last, once the UI is final. |
+| 6 | Video of the working system | ✅ | [Demo video](https://drive.google.com/file/d/1S9hPa6WlyR_Rf6IpYgl2mCYvGUxBLrRi/view?usp=sharing), linked from both READMEs. |
 
 ## Real results so far
 
@@ -104,4 +104,4 @@ This is the "turn on memory" question answered with evidence: same model, one th
 3. **Step 5:** tests for the above; root `npm test` runs the shared and API tests.
 4. ~~**Step 6:** README and design doc.~~ Done.
 5. **Step 7 (paid, you run it):** skill smoke test (lead-triage + invoice-reconcile, A vs `a-deepseek-skill`) and a memory re-run.
-6. Commit, then record the **video**.
+6. ~~Commit, then record the video.~~ Done.
